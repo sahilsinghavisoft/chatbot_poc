@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "rag-system"
+version = "0.1.0"
+description = ""
+authors = ["AT200210 <amaythakur09@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.112.2"
+motor = "^3.5.1"
+mongoengine = "^0.29.0"
+uvicorn = "^0.30.6"
+python-dotenv="^1.0.1"
+goose3 = "^3.1.19"
+langchain-community = "^0.2.16"
+newspaper3k = "^0.2.8"
+pydantic-settings = "^2.4.0"
+lxml-html-clean = "^0.2.2"
+sentence-transformers = "^3.0.1"
+openai = "^0.28"
+python-multipart = "^0.0.9"
+pypdf = "^4.3.1"
+tiktoken = "^0.7.0"
+scrapy = "^2.11.2"
+twisted = "^24.7.0"
+selenium = "^4.24.0"
+webdriver-manager = "^4.0.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

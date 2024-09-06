@@ -1,0 +1,48 @@
+# Ignore .env file
+.env
+
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Ignore environment directories
+venv/
+env/
+.venv/
+
+# Ignore IDE and editor configurations
+.vscode/
+.idea/
+
+# Ignore Docker and related files
+*.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Ignore log files
+*.log
+
+# Ignore virtual environment
+*.env/
+*.venv/
+
+# Ignore database files
+*.sqlite3
+
+# Ignore macOS Finder files
+.DS_Store
+
+# Ignore system-specific files
+*.swp
+*.swo
+
+# Ignore coverage reports
+.coverage
+*.cover
+
+# Ignore build directories
+build/
+dist/
+.env
