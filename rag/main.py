@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from rag.config import settings# Ensure this import works correctly
 from rag.api.endpoints import router  
 
+
+
 # Load environment variables from .env file
 load_dotenv()
 

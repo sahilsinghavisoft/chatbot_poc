@@ -3,27 +3,30 @@ from pydantic import BaseModel, HttpUrl
 from rag.services.data_capture import DataCaptureService
 from rag.services.embedding import EmbeddingService
 from rag.services.qa import QAService
+from config import settings  # Importing settings for the token
 import logging
 import os
+
 router = APIRouter()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 TEMP_DIR = "temp_files"
 os.makedirs(TEMP_DIR, exist_ok=True)
+
 class URLInput(BaseModel):
     url: HttpUrl
 
 class QuestionInput(BaseModel):
     question: str
 
+# Use the diffbot_token from settings
 @router.post("/capture/url")
 async def capture_url(url_input: URLInput):
     try:
-        data_capture_service = DataCaptureService()
+        data_capture_service = DataCaptureService(diffbot_token=settings.diffbot_token)
         doc_id = await data_capture_service.capture_url(str(url_input.url))
         embedding_service = EmbeddingService()
         await embedding_service.update_document_embedding(doc_id)
@@ -31,8 +34,6 @@ async def capture_url(url_input: URLInput):
     except Exception as e:
         logger.error(f"Error capturing URL: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-data_capture_service = DataCaptureService()
 
 @router.post("/capture/pdf")
 async def capture_pdf(file: UploadFile = File(...)):
@@ -42,9 +43,8 @@ async def capture_pdf(file: UploadFile = File(...)):
         with open(file_location, "wb") as f:
             f.write(await file.read())
         
-        # Create an instance of DataCaptureService
-        data_capture_service = DataCaptureService()
-        # Capture and process the PDF using the instance method
+        # Pass the diffbot_token when instantiating the service
+        data_capture_service = DataCaptureService(diffbot_token=settings.diffbot_token)
         doc_id = await data_capture_service.capture_pdf(file_location)
         
         # Clean up the temporary file
@@ -56,8 +56,7 @@ async def capture_pdf(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Error capturing PDF: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    
-    
+
 @router.post("/qa")
 async def answer_question(question_input: QuestionInput):
     try:

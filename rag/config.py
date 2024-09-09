@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ORGANIZATION_NAME: str = ""
     ORGANIZATION_SUMMARY: str = ""
+    diffbot_token: str
 
     class Config:
         env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")

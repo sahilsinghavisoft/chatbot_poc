@@ -1,4 +1,4 @@
-from goose3 import Goose
+"""from goose3 import Goose
 from langchain_community.document_loaders import PyPDFLoader
 from rag.models.document import TextDocument
 from rag.services.embedding import EmbeddingService
@@ -141,3 +141,82 @@ class DataCaptureService:
             self.logger.info(f"Authors: {', '.join(metadata.get('authors', ['N/A']))}")
             self.logger.info(f"Publish Date: {metadata.get('publish_date', 'N/A')}")
         self.logger.info(f"Content preview: {content[:500]}...")
+"""
+import asyncio
+import logging
+import requests
+from typing import Optional, Tuple
+from langchain_community.document_loaders import PyPDFLoader
+from rag.models.document import TextDocument
+from rag.services.embedding import EmbeddingService
+from config import settings  # Importing settings from config.py
+
+class DataCaptureService:
+    def __init__(self, diffbot_token: str):
+        self.embedding_service = EmbeddingService()
+        self.logger = logging.getLogger(__name__)
+        self.diffbot_token = diffbot_token
+
+    async def capture_url(self, url: str) -> str:
+        try:
+            content, metadata = await self._extract_with_diffbot(url)
+            if not content:
+                raise ValueError("Failed to extract content from the URL using Diffbot")
+
+            return await self._process_and_save_content(content, url, metadata)
+        except Exception as e:
+            self.logger.error(f"Error capturing URL {url}: {str(e)}")
+            raise
+
+    async def capture_pdf(self, file_path: str) -> str:
+        try:
+            content = await self._extract_pdf_content(file_path)
+            return await self._process_and_save_content(content, file_path)
+        except Exception as e:
+            self.logger.error(f"Error capturing PDF {file_path}: {str(e)}")
+            raise
+
+    async def _extract_with_diffbot(self, url: str) -> Tuple[Optional[str], Optional[dict]]:
+        try:
+            api_url = f"https://api.diffbot.com/v3/article?token={self.diffbot_token}&url={url}"
+            response = await asyncio.to_thread(requests.get, api_url)
+            if response.status_code == 200:
+                data = response.json()
+                article = data.get('objects', [{}])[0]
+                content = article.get('text', '').strip()
+                metadata = {
+                    "source": "Diffbot",
+                    "title": article.get('title', 'No Title'),
+                    "authors": article.get('author', ['N/A']),
+                    "publish_date": article.get('date', 'N/A')
+                }
+                return content, metadata
+            else:
+                self.logger.warning(f"Diffbot API failed with status code {response.status_code}")
+                return None, None
+        except Exception as e:
+            self.logger.warning(f"Diffbot extraction failed for URL {url}: {str(e)}")
+            return None, None
+
+    async def _extract_pdf_content(self, file_path: str) -> str:
+        loader = PyPDFLoader(file_path)
+        pages = await asyncio.to_thread(loader.load_and_split)
+        return "\n".join([page.page_content for page in pages])
+
+    async def _process_and_save_content(self, content: str, source_url: str, metadata: dict = None) -> str:
+        document_embedding = await self.embedding_service.generate_embedding(content)
+        doc = TextDocument(content=content, source_url=source_url, embedding=document_embedding)
+        await asyncio.to_thread(doc.save)
+        self._log_capture_info(metadata, content)
+        return str(doc.id)
+
+    def _log_capture_info(self, metadata: dict, content: str):
+        if metadata:
+            self.logger.info(f"Source: {metadata.get('source', 'Diffbot')}")
+            self.logger.info(f"Title: {metadata.get('title', 'No Title')}")
+            self.logger.info(f"Authors: {', '.join(metadata.get('authors', ['N/A']))}")
+            self.logger.info(f"Publish Date: {metadata.get('publish_date', 'N/A')}")
+        self.logger.info(f"Content preview: {content[:500]}...")
+
+# Initialize the DataCaptureService with the token from the settings
+data_capture_service = DataCaptureService(diffbot_token=settings.diffbot_token)
