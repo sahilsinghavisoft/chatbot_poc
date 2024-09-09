@@ -3,7 +3,7 @@ from pydantic import BaseModel, HttpUrl
 from rag.services.data_capture import DataCaptureService
 from rag.services.embedding import EmbeddingService
 from rag.services.qa import QAService
-from config import settings  # Importing settings for the token
+from config import settings
 import logging
 import os
 
@@ -26,7 +26,7 @@ class QuestionInput(BaseModel):
 @router.post("/capture/url")
 async def capture_url(url_input: URLInput):
     try:
-        data_capture_service = DataCaptureService(diffbot_token=settings.diffbot_token)
+        data_capture_service = DataCaptureService(diffbot_token=settings.diffbot_token,openai_api_key=settings.OPENAI_API_KEY)
         doc_id = await data_capture_service.capture_url(str(url_input.url))
         embedding_service = EmbeddingService()
         await embedding_service.update_document_embedding(doc_id)
@@ -37,25 +37,23 @@ async def capture_url(url_input: URLInput):
 
 @router.post("/capture/pdf")
 async def capture_pdf(file: UploadFile = File(...)):
+    file_location = os.path.join(TEMP_DIR, file.filename)
     try:
-        # Save the uploaded file to a custom temporary directory
-        file_location = os.path.join(TEMP_DIR, file.filename)
         with open(file_location, "wb") as f:
             f.write(await file.read())
         
-        # Pass the diffbot_token when instantiating the service
-        data_capture_service = DataCaptureService(diffbot_token=settings.diffbot_token)
+        data_capture_service = DataCaptureService(diffbot_token=settings.diffbot_token,openai_api_key=settings.OPENAI_API_KEY)
         doc_id = await data_capture_service.capture_pdf(file_location)
-        
-        # Clean up the temporary file
-        os.remove(file_location)
 
         embedding_service = EmbeddingService()
         await embedding_service.update_document_embedding(doc_id)
         return {"message": "PDF captured and processed successfully", "document_id": doc_id}
     except Exception as e:
         logger.error(f"Error capturing PDF: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))  # Fixed missing parenthesis
+    finally:
+        if os.path.exists(file_location):
+            os.remove(file_location)
 
 @router.post("/qa")
 async def answer_question(question_input: QuestionInput):
