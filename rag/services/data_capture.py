@@ -67,12 +67,6 @@ class DataCaptureService:
             return None, None
 
     async def _extract_with_alternatives(self, url: str) -> Tuple[Optional[str], Optional[dict]]:
-        try:
-            content, metadata = await asyncio.to_thread(self._extract_with_newspaper, url)
-            if content:
-                return content, metadata
-        except Exception as e:
-            self.logger.warning(f"Newspaper3k extraction failed for URL {url}: {str(e)}")
 
         try:
             content, metadata = await asyncio.to_thread(self._extract_with_goose, url)
@@ -80,6 +74,14 @@ class DataCaptureService:
                 return content, metadata
         except Exception as e:
             self.logger.warning(f"Goose extraction failed for URL {url}: {str(e)}")
+
+
+        try:
+            content, metadata = await asyncio.to_thread(self._extract_with_newspaper, url)
+            if content:
+                return content, metadata
+        except Exception as e:
+            self.logger.warning(f"Newspaper3k extraction failed for URL {url}: {str(e)}")
 
         try:
             content, metadata = await asyncio.to_thread(self._extract_with_beautifulsoup, url)
